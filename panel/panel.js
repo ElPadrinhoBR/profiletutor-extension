@@ -1,4 +1,4 @@
-﻿// panel/panel.js - Logica principal do Side Panel
+// panel/panel.js - Logica principal do Side Panel
 import { buildAnalysisPrompt, buildTutorPrompt, buildInvestigatorPrompt, buildChatPrompt } from '../utils/prompts.js';
 import { scoreLinkedIn, scoreGitHub } from '../utils/scorer.js';
 
@@ -382,7 +382,16 @@ function showScreen(screen) {
 }
 
 async function getApiKey() {
-  return new Promise((resolve) => chrome.storage.local.get(['geminiApiKey'], (r) => resolve(r.geminiApiKey || null)));
+  return new Promise((resolve) => {
+    chrome.storage.local.get(['aiProvider', 'geminiApiKey', 'groqApiKey'], (r) => {
+      const provider = r.aiProvider || 'gemini';
+      if (provider === 'groq') {
+        resolve(r.groqApiKey || r.geminiApiKey || null);
+      } else {
+        resolve(r.geminiApiKey || r.groqApiKey || null);
+      }
+    });
+  });
 }
 async function getPageData() {
   return new Promise((resolve, reject) => {
@@ -395,7 +404,7 @@ async function getPageData() {
 }
 async function callGemini(prompt) {
   return new Promise((resolve, reject) => {
-    chrome.runtime.sendMessage({ type: 'CALL_GEMINI', payload: { prompt } }, (response) => {
+    chrome.runtime.sendMessage({ type: 'CALL_AI', payload: { prompt } }, (response) => {
       if (chrome.runtime.lastError) return reject(new Error(chrome.runtime.lastError.message));
       if (!response) return reject(new Error('Sem resposta do worker'));
       if (!response.success) return reject(new Error(response.error || 'Erro desconhecido'));
@@ -405,10 +414,11 @@ async function callGemini(prompt) {
 }
 
 async function updateQuotaStatus() {
-  const result = await new Promise((r) => chrome.storage.local.get(['aiUsage'], r));
+  const result = await new Promise((r) => chrome.storage.local.get(['aiUsage', 'aiProvider', 'geminiModel', 'groqModel'], r));
   const usage = result.aiUsage || {};
   const count = usage.date === new Date().toDateString() ? (usage.count || 0) : 0;
-  quotaStatus.textContent = `IA: ${count} uso${count === 1 ? '' : 's'} hoje • tutor local e gratis`;
+  const provider = result.aiProvider === 'groq' ? '⚡ Groq' : '✨ Gemini';
+  quotaStatus.textContent = `${provider} • ${count} uso${count === 1 ? '' : 's'} hoje • tutor local grátis`;
 }
 function formatAiError(error) {
   updateQuotaStatus();

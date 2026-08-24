@@ -16,17 +16,31 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
-  // --- Chama a IA Gemini ---
-  if (message.type === 'CALL_GEMINI') {
-    chrome.storage.local.get(['geminiApiKey', 'geminiModel'], (result) => {
-      const apiKey = result.geminiApiKey;
-      const model = result.geminiModel || 'gemini-2.0-flash';
-      handleGeminiCall({ apiKey, model, prompt: message.payload.prompt })
-        .then((data) => {
-          trackUsage();
-          sendResponse({ success: true, data });
-        })
-        .catch((err) => sendResponse({ success: false, error: err.message }));
+  // --- Chama a IA (Gemini ou Groq) ---
+  if (message.type === 'CALL_GEMINI' || message.type === 'CALL_AI') {
+    chrome.storage.local.get(['aiProvider', 'geminiApiKey', 'geminiModel', 'groqApiKey', 'groqModel'], (result) => {
+      const provider = result.aiProvider || 'gemini';
+      const prompt = message.payload.prompt;
+
+      if (provider === 'groq') {
+        const apiKey = result.groqApiKey;
+        const model = result.groqModel || 'llama-3.3-70b-versatile';
+        handleGroqCall({ apiKey, model, prompt })
+          .then((data) => {
+            trackUsage();
+            sendResponse({ success: true, data, provider: 'groq' });
+          })
+          .catch((err) => sendResponse({ success: false, error: err.message }));
+      } else {
+        const apiKey = result.geminiApiKey;
+        const model = result.geminiModel || 'gemini-2.0-flash';
+        handleGeminiCall({ apiKey, model, prompt })
+          .then((data) => {
+            trackUsage();
+            sendResponse({ success: true, data, provider: 'gemini' });
+          })
+          .catch((err) => sendResponse({ success: false, error: err.message }));
+      }
     });
     return true;
   }
@@ -78,7 +92,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   // --- Encaminha mensagem de hover para o painel ---
   if (message.type === 'HOVER_ELEMENT') {
-    // Envia para todas as conexoes abertas (painel)
     chrome.runtime.sendMessage(message).catch(() => {});
     return false;
   }
@@ -99,8 +112,9 @@ function detectPlatform(url) {
   return null;
 }
 
+// --- Chamada Google Gemini API ---
 async function handleGeminiCall({ apiKey, prompt, model }) {
-  if (!apiKey) throw new Error('Chave da API nao configurada. Abra as Configuracoes (icone engrenagem) e insira sua chave Gemini.');
+  if (!apiKey) throw new Error('Chave da API Gemini nao configurada. Abra as Configuracoes (⚙️) ou insira no config.js.');
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model || 'gemini-2.0-flash'}:generateContent?key=${apiKey}`;
   const body = {
     contents: [{ parts: [{ text: prompt }] }],
@@ -113,11 +127,44 @@ async function handleGeminiCall({ apiKey, prompt, model }) {
   });
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));
-    throw new Error(err?.error?.message || `Erro HTTP ${response.status}`);
+    throw new Error(err?.error?.message || `Erro Gemini HTTP ${response.status}`);
   }
   const data = await response.json();
   const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!text) throw new Error('Resposta vazia da API Gemini.');
+  return text;
+}
+
+// --- Chamada Groq Cloud API (LPU Inference) ---
+async function handleGroqCall({ apiKey, prompt, model }) {
+  if (!apiKey) throw new Error('Chave da API Groq nao configurada. Abra as Configuracoes (⚙️) ou obtenha em console.groq.com/keys.');
+  const url = 'https://api.groq.com/openai/v1/chat/completions';
+  const body = {
+    model: model || 'llama-3.3-70b-versatile',
+    messages: [
+      {
+        role: 'user',
+        content: prompt,
+      },
+    ],
+    temperature: 0.7,
+    max_tokens: 2048,
+  };
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err?.error?.message || `Erro Groq HTTP ${response.status}`);
+  }
+  const data = await response.json();
+  const text = data?.choices?.[0]?.message?.content;
+  if (!text) throw new Error('Resposta vazia da API Groq.');
   return text;
 }
 
