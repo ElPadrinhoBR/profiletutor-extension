@@ -1,12 +1,14 @@
 ﻿# 🧠 ProfileTutor
 
-> Extensão de navegador inteligente que analisa e otimiza o seu perfil no **LinkedIn** e **GitHub** com IA multi-provedor (**Google Gemini** & **Groq Cloud**), explica métricas vitais e funciona como tutor, investigador e inspetor interativo.
+> Extensão de navegador inteligente que analisa e otimiza o seu perfil no **LinkedIn** e **GitHub** com IA multi-provedor (**Google Gemini** & **Groq Cloud**), explica métricas vitais e funciona como tutor, investigador, inspetor interativo e comparador de concorrência.
 
 ![Chrome](https://img.shields.io/badge/Chrome-Manifest%20V3-4285F4?logo=googlechrome&logoColor=white)
 ![Gemini](https://img.shields.io/badge/IA-Google%20Gemini-8E75B2?logo=google&logoColor=white)
 ![Groq](https://img.shields.io/badge/IA-Groq%20Cloud%20LPU-f55036?logo=fastapi&logoColor=white)
+![Theme](https://img.shields.io/badge/Tema-Claro%20%7C%20Escuro-0969da)
+![PDF](https://img.shields.io/badge/Relat%C3%B3rio-Exportar%20PDF-success)
 ![License](https://img.shields.io/badge/License-MIT-green)
-![Version](https://img.shields.io/badge/Version-1.0.0-blue)
+![Version](https://img.shields.io/badge/Version-1.1.0-blue)
 
 ---
 
@@ -16,25 +18,36 @@
 - Pontuação instantânea de **0 a 100** com cálculo local (sem gastar cota de IA)
 - Níveis de maturidade: *Iniciante*, *Intermediário*, *Avançado* e *Expert*
 - Diagnóstico completo por IA: pontos fortes, pontos críticos e **Top 3 Ações Prioritárias**
+- 📄 **Exportação de Relatório em PDF:** Gere um relatório de auditoria diagramado e pronto para impressão ou download com um clique!
 
-### 2. 🔎 Modo Inspetor (Hover em Tempo Real)
+### 2. ⚖️ Comparativo entre Dois Perfis (Novo!)
+- Confronto direto entre seu perfil e um perfil alvo/concorrente
+- Selecione perfis anteriores do seu histórico ou insira dados de um candidato/referência
+- Tabela comparativa e **Veredito da IA** com plano de ação para superar a concorrência
+
+### 3. 📜 Histórico de Auditorias Salvas (Novo!)
+- Todas as análises realizadas são salvas automaticamente no armazenamento local
+- Reabra diagnósticos antigos a qualquer momento sem consumir novas chamadas de IA
+- Acompanhe a evolução da sua pontuação ao longo do tempo
+
+### 4. 🌓 Tema Claro / Escuro (Novo!)
+- Alternância rápida com um clique no botão 🌓 do cabeçalho
+- Interface adaptada com alto contraste tanto para perfis do LinkedIn quanto do GitHub
+
+### 5. 🔎 Modo Inspetor (Hover em Tempo Real)
 - Ative o modo inspetor com um clique no botão **🔎**
 - Ao passar o mouse sobre qualquer elemento da página (Headline, Foto, Repositórios Pinados, README, Contribuições, Experiências, Skills):
-  - Um tooltip interativo aparece na página explicando a relevância do item
-  - O painel exibe a dica prática de melhoria imediata
-  - Botão **✨ Aprofundar com IA** para gerar sugestões customizadas de redação
+  - Um tooltip interativo surge na tela com diagnóstico imediato
+  - O painel exibe a recomendação prática e o botão **✨ Aprofundar com IA**
 
-### 3. 🎓 Modo Tutor Interativo
+### 6. 🎓 Modo Tutor Interativo
 - Explicações didáticas sobre os algoritmos e métricas das plataformas:
-  - **LinkedIn:** Como o ATS lê seu perfil, Social Selling Index (SSI), impacto do Open to Work, técnicas para o "Sobre", relevância de Recomendações
-  - **GitHub:** Como criar um README de perfil atraente, estratégia de Repositórios Pinados, boas práticas de Contribuições, Stars e Forks
+  - **LinkedIn:** Leitura por ATS, Social Selling Index (SSI), impacto do Open to Work, técnicas para o "Sobre", relevância de Recomendações
+  - **GitHub:** Criação de README de perfil atraente, seleção estratégica de Repositórios Pinados, boas práticas de Contribuições, Stars e Forks
 
-### 4. 🔍 Modo Investigador
-- Análise estratégica de outros perfis para benchmarking, recrutadores ou networking
-- Gera resumo executivo, stack tecnológico identificado, pontos de destaque e **perguntas inteligentes para entrevistas ou conversas**
-
-### 5. 💬 Chat Contextual com IA
-- Assistente conversacional conectado ao perfil aberto no momento
+### 7. 🔍 Modo Investigador & 💬 Chat Contextual
+- Análise estratégica de outros perfis para recrutamento, benchmarking e networking
+- Chatbot conectado com contexto completo do perfil aberto na aba
 
 ---
 
@@ -75,28 +88,19 @@ O ProfileTutor permite alternar livremente entre dois dos melhores provedores gr
 
 ---
 
-## 🏗️ Estrutura do Projeto
+## 📋 Roadmap de Funcionalidades
 
-```
-profiletutor-extension/
-├── manifest.json          # Manifesto Chrome MV3
-├── background.js          # Service Worker com roteamento Groq & Gemini
-├── config.js              # Configurações locais (ignorado no git)
-├── .env                   # Exemplo de variáveis de ambiente
-├── content/
-│   ├── linkedin.js        # Extrator DOM e Inspetor de Hover do LinkedIn
-│   └── github.js          # Extrator DOM e Inspetor de Hover do GitHub
-├── panel/
-│   ├── panel.html         # Interface do Side Panel
-│   ├── panel.js           # Lógica dos 4 modos + Inspetor
-│   └── panel.css          # Estilização com tema Dark moderno
-├── options/
-│   ├── options.html       # Configurações (Seletor Groq/Gemini, Chaves, Modelos)
-│   └── options.js         # Lógica das preferências
-└── utils/
-    ├── prompts.js         # Engenharia de prompts especializados
-    └── scorer.js          # Algoritmo de pontuação local 0-100
-```
+- [x] Análise de qualidade LinkedIn e GitHub com pontuação local 0-100
+- [x] Modo Tutor interativo com mais de 20 tópicos locais
+- [x] Modo Inspetor com hover em tempo real na página
+- [x] Modo Investigador de perfis de terceiros
+- [x] Chat contextual com histórico
+- [x] Suporte Multi-IA (Google Gemini + Groq LPU)
+- [x] **Modo Claro / Escuro (Light & Dark Theme)**
+- [x] **Exportação de Relatório de Auditoria em PDF**
+- [x] **Histórico de Análises Salvas**
+- [x] **Comparativo e Confronto Direto entre Dois Perfis**
+- [ ] Publicação oficial na Chrome Web Store
 
 ---
 

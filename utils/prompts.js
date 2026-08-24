@@ -68,6 +68,27 @@ export function buildInvestigatorPrompt(platform, profileData) {
   return 'Investigue este perfil: ' + data;
 }
 
+export function buildComparisonPrompt(platform, profileA, profileB) {
+  var dataA = JSON.stringify(profileA, null, 2);
+  var dataB = JSON.stringify(profileB, null, 2);
+  var plat = platform === 'linkedin' ? 'LinkedIn' : 'GitHub';
+
+  return 'Voce e um especialista sênior em avaliacao comparativa de perfis profissionais no ' + plat + '.\n\n' +
+    'Realize um confronto direto entre estes dois perfis e forneca:\n\n' +
+    '1. 🏆 **VEREDITO GERAL**: Qual perfil se destaca mais e por que (com resumo de 2 paragrafos)\n' +
+    '2. ⚖️ **TABELA COMPARATIVA DE METRICAS**:\n' +
+    '   - Apresentacao Visual & Headline/Bio\n' +
+    '   - Completude & Storytelling\n' +
+    '   - Prova Social (Recomendacoes/Stars/Seguidores)\n' +
+    '   - Experiencia Pratica & Projetos\n' +
+    '3. 🚀 **VANTAGENS DO PERFIL A** (' + (profileA.name || profileA.username || 'Perfil Atual') + ')\n' +
+    '4. 💎 **VANTAGENS DO PERFIL B** (' + (profileB.name || profileB.username || 'Perfil Comparado') + ')\n' +
+    '5. 🎯 **PLANO DE ACAO PARA SUPERAR O CONCORRENTE**: 3 recomendacoes prioritarias para o Perfil A evoluir.\n\n' +
+    'Seja analitico, construtivo, imparcial e use emojis. Responda em Portugues do Brasil.\n\n' +
+    '=== PERFIL A (Atual) ===\n' + dataA + '\n\n' +
+    '=== PERFIL B (Referencia) ===\n' + dataB;
+}
+
 export function buildChatPrompt(platform, userMessage, profileData, history) {
   var data = profileData ? JSON.stringify(profileData, null, 2) : 'Nenhum dado disponivel';
   var plat = platform === 'linkedin' ? 'LinkedIn' : 'GitHub';

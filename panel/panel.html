@@ -18,9 +18,8 @@
         <div class="platform-badge" id="platformBadge">—</div>
       </div>
       <div class="header-right">
-        <button class="icon-btn hover-toggle-btn" id="hoverModeBtn" title="Modo Inspetor: passe o mouse sobre itens do perfil">
-          🔎
-        </button>
+        <button class="icon-btn" id="themeToggleBtn" title="Alternar Modo Claro/Escuro">🌓</button>
+        <button class="icon-btn hover-toggle-btn" id="hoverModeBtn" title="Modo Inspetor: passe o mouse sobre itens do perfil">🔎</button>
         <button class="icon-btn" id="settingsBtn" title="Configuracoes">⚙️</button>
         <button class="icon-btn" id="hidePanelBtn" title="Ocultar painel">✕</button>
       </div>
@@ -43,13 +42,13 @@
     <!-- State: No API Key -->
     <div class="state-screen" id="noApiKeyScreen" style="display:none;">
       <div class="state-icon">🔑</div>
-      <h2>Configure sua chave Gemini</h2>
-      <p>Para usar a IA, voce precisa de uma chave gratuita do Google Gemini.</p>
+      <h2>Configure sua chave de IA</h2>
+      <p>Para usar as funcoes de IA, configure sua chave gratuita do <strong>Google Gemini</strong> ou <strong>Groq Cloud</strong>.</p>
       <ol class="setup-steps">
-        <li>Acesse <a href="https://aistudio.google.com" target="_blank">aistudio.google.com</a></li>
-        <li>Clique em <strong>Get API Key</strong></li>
-        <li>Copie a chave gerada</li>
-        <li>Cole nas configuracoes da extensao</li>
+        <li>Acesse as <strong>Configurações</strong> da extensão</li>
+        <li>Escolha seu provedor preferido (Gemini ou Groq)</li>
+        <li>Insira sua chave gratuita (sem cartão de crédito)</li>
+        <li>Salve para começar!</li>
       </ol>
       <button class="btn btn-primary" id="goToSettingsBtn">Abrir Configuracoes</button>
     </div>
@@ -78,10 +77,12 @@
         <button class="mode-btn active" data-mode="analysis"><span>📊</span><span>Qualidade</span></button>
         <button class="mode-btn" data-mode="tutor"><span>🎓</span><span>Tutor</span></button>
         <button class="mode-btn" data-mode="investigator"><span>🔍</span><span>Investigar</span></button>
+        <button class="mode-btn" data-mode="compare"><span>⚖️</span><span>Comparar</span></button>
+        <button class="mode-btn" data-mode="history"><span>📜</span><span>Histórico</span></button>
         <button class="mode-btn" data-mode="chat"><span>💬</span><span>Chat</span></button>
       </div>
 
-      <!-- Score Card -->
+      <!-- Score Card (analysis mode) -->
       <div class="score-card" id="scoreCard" style="display:none;">
         <div class="score-circle-wrap">
           <svg class="score-svg" viewBox="0 0 120 120">
@@ -102,7 +103,10 @@
 
       <!-- Analysis Panel -->
       <div class="panel-section" id="analysisPanel" style="display:none;">
-        <button class="analyze-btn" id="analyzeBtn"><span>✨</span> Analisar Perfil com IA</button>
+        <div class="action-buttons-row">
+          <button class="analyze-btn primary-action" id="analyzeBtn"><span>✨</span> Analisar Perfil com IA</button>
+          <button class="btn btn-ghost export-pdf-btn" id="exportPdfBtn" title="Exportar relatório formatado em PDF">📄 PDF</button>
+        </div>
         <div class="ai-result" id="aiResult" style="display:none;"></div>
       </div>
 
@@ -126,6 +130,49 @@
         <div class="ai-result" id="investigatorResult" style="display:none;"></div>
       </div>
 
+      <!-- Compare Panel (Comparativo entre dois perfis) -->
+      <div class="panel-section" id="comparePanel" style="display:none;">
+        <div class="compare-intro">
+          <div class="comp-icon">⚖️</div>
+          <p>Compare este perfil com outro para descobrir pontos fortes, desvantagens e o veredito da IA.</p>
+        </div>
+
+        <div class="compare-profiles-grid">
+          <div class="compare-card profile-a-card">
+            <div class="c-tag">Perfil A (Atual)</div>
+            <div class="c-title" id="compareProfileAName">Carregando...</div>
+            <div class="c-score" id="compareProfileAScore">—/100</div>
+          </div>
+          <div class="compare-card profile-b-card">
+            <div class="c-tag">Perfil B (Alvo)</div>
+            <select id="compareHistorySelect" class="compare-select">
+              <option value="">-- Selecionar do Histórico --</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="compare-or-divider">ou digite o nome/dados do concorrente:</div>
+        <input type="text" id="compareCustomName" placeholder="Ex: Nome, Cargo, Skills ou resumo do perfil B" class="compare-input" />
+
+        <button class="analyze-btn" id="compareBtn" style="margin-top: 10px;">
+          <span>⚖️</span> Executar Confronto de Perfis
+        </button>
+
+        <div class="ai-result" id="compareResult" style="display:none;"></div>
+      </div>
+
+      <!-- History Panel (Histórico de Análises) -->
+      <div class="panel-section" id="historyPanel" style="display:none;">
+        <div class="history-header-row">
+          <h3>📜 Análises Salvas</h3>
+          <button class="btn-clear-history" id="clearHistoryBtn" title="Limpar histórico">🗑️ Limpar</button>
+        </div>
+        <div class="history-list" id="historyList">
+          <div class="empty-history">Nenhuma análise salva ainda. Analise um perfil para salvar seu histórico automaticamente!</div>
+        </div>
+        <div class="ai-result" id="historyDetailResult" style="display:none; margin-top: 12px;"></div>
+      </div>
+
       <!-- Chat Panel -->
       <div class="panel-section chat-panel" id="chatPanel" style="display:none;">
         <div class="chat-messages" id="chatMessages">
@@ -143,7 +190,7 @@
 
     <!-- Footer -->
     <footer class="footer">
-      <span id="quotaStatus">IA: verificando uso...</span>
+      <span id="quotaStatus">IA: verificando...</span>
       <button class="footer-link" id="refreshBtn">🔄 Recarregar</button>
     </footer>
   </div>
