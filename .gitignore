@@ -1,0 +1,13 @@
+﻿# Seguranca - nunca commite estes arquivos!
+.env
+config.js
+
+# Editor
+.vscode/
+.idea/
+*.DS_Store
+
+# Build (caso use no futuro)
+node_modules/
+dist/
+build/
