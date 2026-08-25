@@ -96,7 +96,13 @@ async function init() {
 
   loadingText.textContent = 'Lendo dados do perfil...';
   try {
-    const result = await getPageData();
+    let result = await getPageData();
+    if (!result.success || !result.data) {
+      // Segunda tentativa caso o LinkedIn ainda esteja hidratando o DOM
+      await new Promise((r) => setTimeout(r, 700));
+      result = await getPageData();
+    }
+
     if (!result.success || !result.data) {
       showScreen('notSupported');
       return;

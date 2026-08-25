@@ -3,7 +3,7 @@ try { importScripts('config.js'); } catch (e) {
   console.warn('[ProfileTutor] config.js nao encontrado. Configure a chave nas opcoes.');
 }
 
-// Configura o comportamento nativo de abrir o Side Panel ao clicar no icone
+// Configura o comportamento de abrir o Side Panel ao clicar no icone da extensao
 if (chrome.sidePanel && chrome.sidePanel.setPanelBehavior) {
   chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {});
 }
@@ -54,19 +54,37 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
-  // --- Obtem dados da pagina atual ---
+  // --- Obtem dados da pagina atual com auto-injecao garantida ---
   if (message.type === 'GET_PAGE_DATA') {
     chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
       if (!tabs[0]) return sendResponse({ success: false, error: 'Nenhuma aba ativa' });
       const tab = tabs[0];
       const platform = detectPlatform(tab.url);
       if (!platform) return sendResponse({ success: false, error: 'Plataforma nao suportada' });
+
       try {
-        const results = await chrome.scripting.executeScript({
+        // Tenta executar a funcao se ja estiver carregada no DOM
+        let results = await chrome.scripting.executeScript({
           target: { tabId: tab.id },
           func: () => typeof window.__profileTutorExtract === 'function' ? window.__profileTutorExtract() : null,
         });
-        sendResponse({ success: true, data: results[0]?.result, platform });
+
+        // Se nao estava carregada (ex: SPA ou aba aberta anteriormente), injeta o content script
+        if (!results[0]?.result) {
+          const scriptFile = platform === 'linkedin' ? 'content/linkedin.js' : 'content/github.js';
+          await chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            files: [scriptFile],
+          });
+
+          results = await chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            func: () => typeof window.__profileTutorExtract === 'function' ? window.__profileTutorExtract() : null,
+          });
+        }
+
+        const data = results[0]?.result;
+        sendResponse({ success: true, data, platform });
       } catch (err) {
         sendResponse({ success: false, error: err.message });
       }
@@ -82,6 +100,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       const platform = detectPlatform(tab.url);
       if (!platform) return sendResponse({ success: false, error: 'Plataforma nao suportada' });
       try {
+        const scriptFile = platform === 'linkedin' ? 'content/linkedin.js' : 'content/github.js';
+        await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          files: [scriptFile],
+        }).catch(() => {});
+
         await chrome.scripting.executeScript({
           target: { tabId: tab.id },
           func: (enable, plat) => {
