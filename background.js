@@ -1,4 +1,4 @@
-﻿// background.js - Service Worker do ProfileTutor
+﻿// background.js - Service Worker do ProfileTutor com Gemini, Groq e OpenRouter
 try { importScripts('config.js'); } catch (e) {
   console.warn('[ProfileTutor] config.js nao encontrado. Configure a chave nas opcoes.');
 }
@@ -25,32 +25,44 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
-  // --- Chama a IA (Gemini ou Groq) ---
+  // --- Chama a IA (Gemini, Groq ou OpenRouter) ---
   if (message.type === 'CALL_GEMINI' || message.type === 'CALL_AI') {
-    chrome.storage.local.get(['aiProvider', 'geminiApiKey', 'geminiModel', 'groqApiKey', 'groqModel'], (result) => {
-      const provider = result.aiProvider || 'gemini';
-      const prompt = message.payload.prompt;
+    chrome.storage.local.get(
+      ['aiProvider', 'geminiApiKey', 'geminiModel', 'groqApiKey', 'groqModel', 'openrouterApiKey', 'openrouterModel'],
+      (result) => {
+        const provider = result.aiProvider || 'gemini';
+        const prompt = message.payload.prompt;
 
-      if (provider === 'groq') {
-        const apiKey = result.groqApiKey;
-        const model = result.groqModel || 'llama-3.3-70b-versatile';
-        handleGroqCall({ apiKey, model, prompt })
-          .then((data) => {
-            trackUsage();
-            sendResponse({ success: true, data, provider: 'groq' });
-          })
-          .catch((err) => sendResponse({ success: false, error: err.message }));
-      } else {
-        const apiKey = result.geminiApiKey;
-        const model = result.geminiModel || 'gemini-2.0-flash';
-        handleGeminiCall({ apiKey, model, prompt })
-          .then((data) => {
-            trackUsage();
-            sendResponse({ success: true, data, provider: 'gemini' });
-          })
-          .catch((err) => sendResponse({ success: false, error: err.message }));
+        if (provider === 'openrouter') {
+          const apiKey = result.openrouterApiKey;
+          const model = result.openrouterModel || 'deepseek/deepseek-r1:free';
+          handleOpenRouterCall({ apiKey, model, prompt })
+            .then((data) => {
+              trackUsage();
+              sendResponse({ success: true, data, provider: 'openrouter' });
+            })
+            .catch((err) => sendResponse({ success: false, error: err.message }));
+        } else if (provider === 'groq') {
+          const apiKey = result.groqApiKey;
+          const model = result.groqModel || 'llama-3.3-70b-versatile';
+          handleGroqCall({ apiKey, model, prompt })
+            .then((data) => {
+              trackUsage();
+              sendResponse({ success: true, data, provider: 'groq' });
+            })
+            .catch((err) => sendResponse({ success: false, error: err.message }));
+        } else {
+          const apiKey = result.geminiApiKey;
+          const model = result.geminiModel || 'gemini-2.0-flash';
+          handleGeminiCall({ apiKey, model, prompt })
+            .then((data) => {
+              trackUsage();
+              sendResponse({ success: true, data, provider: 'gemini' });
+            })
+            .catch((err) => sendResponse({ success: false, error: err.message }));
+        }
       }
-    });
+    );
     return true;
   }
 
@@ -63,13 +75,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       if (!platform) return sendResponse({ success: false, error: 'Plataforma nao suportada' });
 
       try {
-        // Tenta executar a funcao se ja estiver carregada no DOM
         let results = await chrome.scripting.executeScript({
           target: { tabId: tab.id },
           func: () => typeof window.__profileTutorExtract === 'function' ? window.__profileTutorExtract() : null,
         });
 
-        // Se nao estava carregada (ex: SPA ou aba aberta anteriormente), injeta o content script
         if (!results[0]?.result) {
           const scriptFile = platform === 'linkedin' ? 'content/linkedin.js' : 'content/github.js';
           await chrome.scripting.executeScript({
@@ -204,6 +214,41 @@ async function handleGroqCall({ apiKey, prompt, model }) {
   const data = await response.json();
   const text = data?.choices?.[0]?.message?.content;
   if (!text) throw new Error('Resposta vazia da API Groq.');
+  return text;
+}
+
+// --- Chamada OpenRouter API ---
+async function handleOpenRouterCall({ apiKey, prompt, model }) {
+  if (!apiKey) throw new Error('Chave da API OpenRouter nao configurada. Obtenha gratuitamente em openrouter.ai/keys.');
+  const url = 'https://openrouter.ai/api/v1/chat/completions';
+  const body = {
+    model: model || 'deepseek/deepseek-r1:free',
+    messages: [
+      {
+        role: 'user',
+        content: prompt,
+      },
+    ],
+    temperature: 0.7,
+    max_tokens: 2048,
+  };
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+      'HTTP-Referer': 'https://github.com/ElPadrinhoBR/profiletutor-extension',
+      'X-Title': 'ProfileTutor',
+    },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err?.error?.message || `Erro OpenRouter HTTP ${response.status}`);
+  }
+  const data = await response.json();
+  const text = data?.choices?.[0]?.message?.content;
+  if (!text) throw new Error('Resposta vazia da API OpenRouter.');
   return text;
 }
 

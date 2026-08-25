@@ -651,12 +651,14 @@ function showScreen(screen) {
 
 async function getApiKey() {
   return new Promise((resolve) => {
-    chrome.storage.local.get(['aiProvider', 'geminiApiKey', 'groqApiKey'], (r) => {
+    chrome.storage.local.get(['aiProvider', 'geminiApiKey', 'groqApiKey', 'openrouterApiKey'], (r) => {
       const provider = r.aiProvider || 'gemini';
-      if (provider === 'groq') {
-        resolve(r.groqApiKey || r.geminiApiKey || null);
+      if (provider === 'openrouter') {
+        resolve(r.openrouterApiKey || r.groqApiKey || r.geminiApiKey || null);
+      } else if (provider === 'groq') {
+        resolve(r.groqApiKey || r.openrouterApiKey || r.geminiApiKey || null);
       } else {
-        resolve(r.geminiApiKey || r.groqApiKey || null);
+        resolve(r.geminiApiKey || r.groqApiKey || r.openrouterApiKey || null);
       }
     });
   });
@@ -687,7 +689,9 @@ async function updateQuotaStatus() {
   const result = await new Promise((r) => chrome.storage.local.get(['aiUsage', 'aiProvider'], r));
   const usage = result.aiUsage || {};
   const count = usage.date === new Date().toDateString() ? (usage.count || 0) : 0;
-  const provider = result.aiProvider === 'groq' ? '⚡ Groq' : '✨ Gemini';
+  let provider = '✨ Gemini';
+  if (result.aiProvider === 'groq') provider = '⚡ Groq';
+  if (result.aiProvider === 'openrouter') provider = '🌐 OpenRouter';
   quotaStatus.textContent = `${provider} • ${count} uso${count === 1 ? '' : 's'} hoje • tutor local grátis`;
 }
 
