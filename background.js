@@ -3,14 +3,23 @@ try { importScripts('config.js'); } catch (e) {
   console.warn('[ProfileTutor] config.js nao encontrado. Configure a chave nas opcoes.');
 }
 
+// Configura o comportamento nativo de abrir o Side Panel ao clicar no icone
+if (chrome.sidePanel && chrome.sidePanel.setPanelBehavior) {
+  chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {});
+}
+
 chrome.action.onClicked.addListener((tab) => {
-  chrome.sidePanel.open({ tabId: tab.id });
+  if (chrome.sidePanel && chrome.sidePanel.open) {
+    chrome.sidePanel.open({ tabId: tab.id });
+  }
 });
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === 'complete' && tab.url) {
     const isSupported = tab.url.includes('linkedin.com') || tab.url.includes('github.com');
-    chrome.sidePanel.setOptions({ tabId, path: 'panel/panel.html', enabled: isSupported });
+    if (chrome.sidePanel && chrome.sidePanel.setOptions) {
+      chrome.sidePanel.setOptions({ tabId, path: 'panel/panel.html', enabled: isSupported });
+    }
   }
 });
 
@@ -99,7 +108,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // --- Oculta painel ---
   if (message.type === 'HIDE_PANEL') {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0]) chrome.sidePanel.setOptions({ tabId: tabs[0].id, enabled: false });
+      if (tabs[0] && chrome.sidePanel && chrome.sidePanel.setOptions) {
+        chrome.sidePanel.setOptions({ tabId: tabs[0].id, enabled: false }).then(() => {
+          setTimeout(() => {
+            chrome.sidePanel.setOptions({ tabId: tabs[0].id, enabled: true });
+          }, 300);
+        });
+      }
     });
     return false;
   }
@@ -135,7 +150,7 @@ async function handleGeminiCall({ apiKey, prompt, model }) {
   return text;
 }
 
-// --- Chamada Groq Cloud API (LPU Inference) ---
+// --- Chamada Groq Cloud API ---
 async function handleGroqCall({ apiKey, prompt, model }) {
   if (!apiKey) throw new Error('Chave da API Groq nao configurada. Abra as Configuracoes (⚙️) ou obtenha em console.groq.com/keys.');
   const url = 'https://api.groq.com/openai/v1/chat/completions';

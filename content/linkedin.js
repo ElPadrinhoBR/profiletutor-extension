@@ -1,4 +1,4 @@
-﻿// content/linkedin.js - Extrator + Modo Hover para LinkedIn
+﻿// content/linkedin.js - Extrator + Modo Inspetor Completo para LinkedIn
 (function () {
   'use strict';
 
@@ -53,103 +53,124 @@
     return profile;
   };
 
-  // ===================== MODO HOVER =====================
+  // ===================== MODO INSPETOR EXPANDIDO =====================
   var _hoverActive = false;
   var _tooltip = null;
   var _hoverTimeout = null;
 
-  // Mapa de seletores → dicas de otimizacao
   var HOVER_MAP = [
+    // 1. BANNER & FOTO
+    {
+      selector: '.profile-background-image, [class*="background-image"], .cover-img',
+      id: 'banner', label: '🖼️ Banner de Fundo (Capa)',
+      tip: 'O banner ocupa o maior espaço visual do perfil. Transmite seu posicionamento profissional antes mesmo do texto.',
+      action: 'Use uma capa customizada (1584x396px) com seu slogan, stack técnica e contato.',
+    },
     {
       selector: 'img.pv-top-card-profile-picture__image--show, img.EntityPhoto-circle-5, button img.avatar',
-      id: 'photo',
-      label: '📷 Foto de Perfil',
-      tip: 'Use uma foto profissional com boa iluminacao, rosto visivel e fundo neutro. Perfis com foto recebem ate 21x mais visualizacoes.',
-      action: 'Substitua por uma foto em alta resolucao (400x400px+) com rosto centralizado.',
+      id: 'photo', label: '📷 Foto de Perfil',
+      tip: 'Perfis com foto profissional recebem até 21x mais visualizações e 9x mais pedidos de conexão.',
+      action: 'Foto recente em alta resolução (400x400px+), rosto centralizado e fundo neutro.',
     },
     {
-      selector: 'h1.text-heading-xlarge',
-      id: 'name',
-      label: '📛 Seu Nome',
-      tip: 'Seu nome deve ser o nome profissional pelo qual e reconhecido. Evite apelidos ou caracteres especiais que dificultem buscas.',
-      action: 'Certifique-se de que e o mesmo nome usado no curriculo e em outros canais profissionais.',
+      selector: 'h1.text-heading-xlarge, h1',
+      id: 'name', label: '📛 Nome Profissional',
+      tip: 'Deve ser o nome pelo qual você quer ser encontrado no mercado de trabalho.',
+      action: 'Evite símbolos ou emojis no nome para não prejudicar buscas e filtros de ATS.',
     },
     {
-      selector: '.text-body-medium.break-words',
-      id: 'headline',
-      label: '✍️ Headline',
-      tip: 'A headline aparece ao lado do seu nome em TODAS as buscas, comentarios e sugestoes. E seu cartao de visitas mais visto.',
-      action: 'Formato ideal: [Cargo] | [Especialidade] | [Diferencial]. Ex: Dev Full Stack | React & Node | Foco em Performance.',
-    },
-    {
-      selector: '.text-body-small.inline.t-black--light.break-words',
-      id: 'location',
-      label: '📍 Localizacao',
-      tip: 'A localizacao influencia buscas por proximidade e filtros de vagas. Recrutadores filtram por regiao.',
-      action: 'Use cidade + estado. Se trabalha remoto, adicione "Remoto" ou "Disponivel para remoto" na headline.',
+      selector: '.text-body-medium.break-words, .ph5 .mt2 .text-body-medium',
+      id: 'headline', label: '✍️ Headline (Título Profissional)',
+      tip: 'Aparece abaixo do seu nome em TODO o LinkedIn (comentários, mensagens, buscas de recrutadores).',
+      action: 'Estrutura: [Cargo Alvo] | [Especialidade Técnica] | [Impacto/Resultados].',
     },
     {
       selector: '[class*="open-to-work"], [class*="open_to_work"]',
-      id: 'open_to_work',
-      label: '🟢 Open to Work',
-      tip: 'A moldura verde aumenta a visibilidade com recrutadores. Configure os tipos de cargo e modalidade desejados.',
-      action: 'Em Configuracoes > Preferencias de emprego, escolha: cargos-alvo, localidade, tipo de emprego e visibilidade (so recrutadores ou todos).',
+      id: 'open_to_work', label: '🟢 Moldura Open to Work',
+      tip: 'Sinaliza aos recrutadores que você está ativamente buscando novas oportunidades.',
+      action: 'Configure cargos desejados, tipo de contrato e locais em Preferências de emprego.',
     },
     {
+      selector: '.pv-top-card-v2-ctas, .pvs-profile-actions, button.artdeco-button--primary',
+      id: 'profile_actions', label: '🔘 Botões de Ação (Conectar / Mensagem)',
+      tip: 'Ponto de contato direto para recrutadores e conexões enviarem mensagens ou propostas.',
+      action: 'Mantenha mensagens diretas abertas e personalize notas de conexão.',
+    },
+
+    // 2. DESTAQUES & MODO DE CRIAÇÃO
+    {
+      selector: '#featured, section[aria-label*="Destaque"], section[aria-label*="Featured"]',
+      id: 'featured', label: '⭐ Seção em Destaque (Featured)',
+      tip: 'Permite fixar seus melhores projetos, certificados, publicações virais ou links de portfólio no topo.',
+      action: 'Fixe links do seu GitHub, artigos técnicos ou posts com maior engajamento.',
+    },
+    {
+      selector: '#creator_mode, [class*="creator-mode"]',
+      id: 'creator_mode', label: '💡 Modo de Criação de Conteúdo',
+      tip: 'Destaca hashtags de tópicos que você aborda e transforma o botão Conectar em Seguir.',
+      action: 'Ative se você publica conteúdos técnicos e quer crescer como autoridade na sua área.',
+    },
+    {
+      selector: '#activities, section[class*="activity"]',
+      id: 'activity', label: '💬 Atividades & Publicações Recentes',
+      tip: 'Recrutadores avaliam se o profissional está ativo no mercado através de postagens e comentários.',
+      action: 'Comente em posts da sua área 2-3 vezes por semana para manter o perfil aquecido no algoritmo.',
+    },
+
+    // 3. SOBRE, EXPERIÊNCIAS E SKILLS
+    {
       selector: '#about',
-      id: 'about',
-      label: '📝 Secao Sobre',
-      tip: 'O campo "Sobre" e sua carta de apresentacao. Deve contar sua historia, nao so listar habilidades.',
-      action: 'Estrutura recomendada: 1) Quem sou e meu foco. 2) Principais resultados concretos. 3) Tecnologias/areas. 4) Convite para contato.',
+      id: 'about', label: '📝 Seção Sobre (Resumo Executivo)',
+      tip: 'Sua carta de apresentação. Conta sua história, conquistas e proposta de valor profissional.',
+      action: '1º parágrafo: foco e paixão. 2º: realizações e tecnologias. 3º: chamada para contato.',
     },
     {
       selector: '#experience',
-      id: 'experience',
-      label: '💼 Experiencias',
-      tip: 'Experiencias sao o coração do perfil. Recrutadores passam a maior parte do tempo aqui.',
-      action: 'Para cada cargo: use verbos de acao + numeros. Ex: "Reduzi o tempo de build em 40% implementando cache no CI/CD". Evite so listar responsabilidades.',
+      id: 'experience', label: '💼 Experiências Profissionais',
+      tip: 'O histórico detalhado de atuação. Recrutadores buscam resultados mensuráveis.',
+      action: 'Use verbos de ação + métricas: "Desenvolvi X reduzindo tempo de resposta em Y%".',
     },
     {
       selector: '#education',
-      id: 'education',
-      label: '🎓 Educacao',
-      tip: 'Educacao valida formacao academica e mostra trajetoria de aprendizado.',
-      action: 'Adicione cursos, bootcamps e certificacoes relevantes alem da graduacao. Mantenha as datas atualizadas.',
+      id: 'education', label: '🎓 Formação Acadêmica',
+      tip: 'Valida sua base teórica e compromisso com aprendizado formal e contínuo.',
+      action: 'Adicione cursos superiores, bootcamps relevantes e atividades acadêmicas.',
     },
     {
       selector: '#skills',
-      id: 'skills',
-      label: '🛠️ Competencias/Skills',
-      tip: 'Skills sao usadas pelo algoritmo do LinkedIn para recomendar seu perfil a recrutadores que buscam por essas habilidades.',
-      action: 'Adicione 20-50 skills relevantes. Priorize as que voce realmente usa. Peca endorsements para as principais.',
+      id: 'skills', label: '🛠️ Competências & Skills',
+      tip: 'Essencial para a busca booleana e algoritmos de recomendação de vagas do LinkedIn.',
+      action: 'Adicione 20 a 50 competências. Peça validações (endorsements) para as principais.',
     },
     {
       selector: '#licenses_and_certifications, #certifications',
-      id: 'certifications',
-      label: '🏆 Certificacoes',
-      tip: 'Certificacoes provam aprendizado formal e diferenciam candidatos com experiencias similares.',
-      action: 'Adicione o emissor, data e link de credencial. Remova certificacoes antigas e irrelevantes para seu objetivo atual.',
+      id: 'certifications', label: '🏆 Licenças & Certificações',
+      tip: 'Prova social de conhecimento técnico atualizado em tecnologias de ponta.',
+      action: 'Adicione emissor, data e o link de credencial verificável.',
     },
     {
       selector: '#recommendations',
-      id: 'recommendations',
-      label: '⭐ Recomendacoes',
-      tip: 'Recomendacoes sao o social proof mais valioso do LinkedIn. Mostram como e trabalhar com voce na pratica.',
-      action: 'Peca recomendacoes especificas: "Pode mencionar o projeto X e como lidamos com o prazo?". 3+ recomendacoes e o ideal.',
-    },
-    {
-      selector: '#languages',
-      id: 'languages',
-      label: '🌍 Idiomas',
-      tip: 'Idiomas abrem oportunidades internacionais e demonstram versatilidade.',
-      action: 'Seja honesto sobre o nivel. Use: Basico / Intermediario / Avancado / Fluente / Nativo.',
+      id: 'recommendations', label: '🌟 Recomendações de Terceiros',
+      tip: 'O maior fator de confiança do LinkedIn. Depoimentos reais de quem trabalhou com você.',
+      action: 'Tenha pelo menos 3 recomendações de gestores, colegas de equipe ou clientes.',
     },
     {
       selector: '#projects',
-      id: 'projects',
-      label: '🚀 Projetos',
-      tip: 'A secao de projetos permite mostrar trabalhos praticos, mesmo sem experiencia formal.',
-      action: 'Adicione link do GitHub, deploy ou demo. Descreva o problema resolvido, tecnologias e impacto.',
+      id: 'projects', label: '🚀 Projetos Realizados',
+      tip: 'Vitrine ideal para mostrar projetos práticos, repositórios do GitHub e trabalhos em equipe.',
+      action: 'Descreva o problema resolvido e adicione o link do GitHub ou deploy.',
+    },
+    {
+      selector: '#languages',
+      id: 'languages', label: '🌍 Idiomas',
+      tip: 'Abre portas para posições remotas globais e multinacionais.',
+      action: 'Indique honestamente o nível de proficiência (Básico, Intermediário, Avançado ou Fluente).',
+    },
+    {
+      selector: '#interests',
+      id: 'interests', label: '🎯 Interesses, Empresas & Grupos',
+      tip: 'Mostra quais empresas e líderes de tecnologia você acompanha.',
+      action: 'Siga empresas dos seus sonhos e participe de grupos ativos da sua área.',
     },
   ];
 
@@ -174,27 +195,20 @@
     if (!_hoverActive) return;
     var target = e.target;
     var match = null;
-
     for (var i = 0; i < HOVER_MAP.length; i++) {
       try {
-        if (target.matches && target.matches(HOVER_MAP[i].selector)) {
-          match = HOVER_MAP[i]; break;
-        }
+        if (target.matches && target.matches(HOVER_MAP[i].selector)) { match = HOVER_MAP[i]; break; }
         var ancestor = target.closest && target.closest(HOVER_MAP[i].selector);
         if (ancestor) { match = HOVER_MAP[i]; break; }
       } catch(ex) {}
     }
-
     if (match) {
       clearTimeout(_hoverTimeout);
-      _hoverTimeout = setTimeout(function() {
-        _showTooltip(match, e);
-        _notifyPanel(match);
-      }, 200);
+      _hoverTimeout = setTimeout(function() { _showTooltip(match, e); _notifyPanel(match); }, 150);
     }
   }
 
-  function _onMouseOut(e) {
+  function _onMouseOut() {
     clearTimeout(_hoverTimeout);
     if (_tooltip) _tooltip.style.opacity = '0';
   }
@@ -203,13 +217,10 @@
     if (!_tooltip) return;
     _tooltip.innerHTML = '<div class="pt-tt-header">' + match.label + '</div>' +
       '<div class="pt-tt-tip">' + match.tip + '</div>' +
-      '<div class="pt-tt-action"><strong>✅ Acao:</strong> ' + match.action + '</div>';
-
-    var x = e.clientX + 12;
-    var y = e.clientY + 12;
-    if (x + 300 > window.innerWidth) x = e.clientX - 310;
-    if (y + 140 > window.innerHeight) y = e.clientY - 150;
-
+      '<div class="pt-tt-action"><strong>✅ Ação recomendada:</strong> ' + match.action + '</div>';
+    var x = e.clientX + 14, y = e.clientY + 14;
+    if (x + 320 > window.innerWidth) x = e.clientX - 330;
+    if (y + 170 > window.innerHeight) y = e.clientY - 180;
     _tooltip.style.left = x + 'px';
     _tooltip.style.top = y + 'px';
     _tooltip.style.opacity = '1';
@@ -218,8 +229,7 @@
   function _notifyPanel(match) {
     try {
       chrome.runtime.sendMessage({
-        type: 'HOVER_ELEMENT',
-        platform: 'linkedin',
+        type: 'HOVER_ELEMENT', platform: 'linkedin',
         element: { id: match.id, label: match.label, tip: match.tip, action: match.action }
       });
     } catch(e) {}
@@ -229,13 +239,12 @@
     if (document.getElementById('__pt_tooltip')) return;
     var style = document.createElement('style');
     style.id = '__pt_style';
-    style.textContent = '#__pt_tooltip{position:fixed;z-index:2147483647;max-width:300px;background:#1a1f27;border:1px solid #0A66C2;border-radius:10px;padding:12px;box-shadow:0 8px 24px rgba(0,0,0,0.5);pointer-events:none;transition:opacity 0.15s;opacity:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:12px;line-height:1.5;color:#e6edf3;}'
-      + '#__pt_tooltip .pt-tt-header{font-weight:700;font-size:13px;color:#58a6ff;margin-bottom:6px;}'
+    style.textContent = '#__pt_tooltip{position:fixed;z-index:2147483647;max-width:320px;background:#161b22;border:1.5px solid #0A66C2;border-radius:10px;padding:12px;box-shadow:0 10px 30px rgba(0,0,0,0.6);pointer-events:none;transition:opacity 0.15s ease;opacity:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:12px;line-height:1.5;color:#e6edf3;}'
+      + '#__pt_tooltip .pt-tt-header{font-weight:700;font-size:13px;color:#58a6ff;margin-bottom:6px;border-bottom:1px solid #30363d;padding-bottom:4px;}'
       + '#__pt_tooltip .pt-tt-tip{color:#c9d1d9;margin-bottom:8px;}'
-      + '#__pt_tooltip .pt-tt-action{background:rgba(10,102,194,0.15);border-left:3px solid #0A66C2;padding:6px 8px;border-radius:0 6px 6px 0;color:#e6edf3;font-size:11px;}'
-      + '#__pt_banner{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:2147483646;background:#0A66C2;color:white;padding:8px 16px;border-radius:20px;font-family:-apple-system,sans-serif;font-size:12px;font-weight:600;box-shadow:0 4px 12px rgba(0,0,0,0.3);pointer-events:none;}';
+      + '#__pt_tooltip .pt-tt-action{background:rgba(10,102,194,0.15);border-left:3px solid #0A66C2;padding:6px 8px;border-radius:0 6px 6px 0;color:#f0f6fc;font-size:11.5px;}'
+      + '#__pt_banner{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:2147483646;background:#0A66C2;color:white;padding:8px 18px;border-radius:24px;font-family:-apple-system,sans-serif;font-size:12.5px;font-weight:700;box-shadow:0 6px 20px rgba(0,0,0,0.4);pointer-events:none;border:1px solid rgba(255,255,255,0.2);}';
     document.head.appendChild(style);
-
     _tooltip = document.createElement('div');
     _tooltip.id = '__pt_tooltip';
     document.body.appendChild(_tooltip);
@@ -256,12 +265,11 @@
     if (show) {
       var banner = document.createElement('div');
       banner.id = '__pt_banner';
-      banner.textContent = '🧠 ProfileTutor: Modo Inspetor ATIVO — passe o mouse sobre os itens';
+      banner.textContent = '🧠 ProfileTutor: Modo Inspetor ATIVO — passe o mouse sobre abas e seções';
       document.body.appendChild(banner);
     }
   }
 
-  // --- Auxiliares ---
   function _getText(sel, fb) { try { var el = document.querySelector(sel); return el ? el.innerText.trim() : (fb||''); } catch(e) { return fb||''; } }
   function _qText(el, sel) { try { var f = el.querySelector(sel); return f ? f.innerText.trim() : ''; } catch(e) { return ''; } }
   function _hasEl(sel) { try { return !!document.querySelector(sel); } catch(e) { return false; } }

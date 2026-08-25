@@ -1,4 +1,4 @@
-﻿// panel/panel.js - Logica principal do ProfileTutor
+// panel/panel.js - Logica principal do ProfileTutor
 import {
   buildAnalysisPrompt,
   buildTutorPrompt,
@@ -718,7 +718,14 @@ function escapeHtml(t) {
 settingsBtn.addEventListener('click', () => chrome.runtime.openOptionsPage());
 goToSettingsBtn.addEventListener('click', () => chrome.runtime.openOptionsPage());
 refreshBtn.addEventListener('click', () => { chatHistory = []; if (hoverModeActive) toggleHoverMode(true); init(); });
-hidePanelBtn.addEventListener('click', () => chrome.runtime.sendMessage({ type: 'HIDE_PANEL' }));
+hidePanelBtn.addEventListener('click', () => {
+  try {
+    chrome.runtime.sendMessage({ type: 'HIDE_PANEL' });
+  } catch (e) {}
+  if (typeof window.close === 'function') {
+    window.close();
+  }
+});
 chrome.storage.onChanged.addListener(() => updateQuotaStatus());
 
 init();
